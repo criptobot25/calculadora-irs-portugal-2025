@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Bot, User, Send, Sparkles, FileText, Calculator } from 'lucide-react'
-import { CustomIRSAI } from '@/lib/customIRS_AI'
+import { Bot, User, Send, Sparkles, FileText, Calculator, Lightbulb, ExternalLink, TrendingUp } from 'lucide-react'
+import { HybridIntelligentAI } from '@/lib/hybridAI'
 
 interface Message {
   id: string
@@ -13,6 +13,8 @@ interface Message {
   content: string
   timestamp: Date
   extractedData?: Record<string, unknown>
+  sources?: Array<{title: string, url: string, snippet: string}>
+  mlInsights?: string[]
 }
 
 interface AICalculatorChatProps {
@@ -24,7 +26,7 @@ export default function AICalculatorChat({ onDataExtracted, onCalculationReady }
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [aiAssistant] = useState(() => new CustomIRSAI())
+  const [aiAssistant] = useState(() => new HybridIntelligentAI())
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -72,28 +74,30 @@ Responda de forma natural, como se estivesse a falar com um amigo! 😊`,
         role: 'assistant',
         content: response.message,
         timestamp: new Date(),
-        extractedData: response.extractedData
+        extractedData: response.extractedData,
+        sources: response.sources,
+        mlInsights: response.mlInsights
       }
 
       setMessages(prev => [...prev, assistantMessage])
 
       // Se extraiu dados, passa para o componente pai
-      if (response.extractedData) {
+      if (response.extractedData && Object.keys(response.extractedData).length > 0) {
         onDataExtracted(response.extractedData)
       }
 
-      // Se os dados estão completos, pode calcular
-      if (response.isComplete) {
+      // Se a confiança é alta, pode sugerir cálculo
+      if (response.confidence > 0.7) {
         setTimeout(() => {
           const completeMessage: Message = {
             id: (Date.now() + 2).toString(),
             role: 'assistant',
-            content: `Perfeito! ✅ Tenho todos os dados necessários.
+            content: `✅ Tenho informações suficientes para calcular o seu IRS!
 
 Gostaria de:
-🔢 **Calcular o IRS agora** - Ver o resultado imediatamente
-📋 **Revisar os dados** - Verificar se tudo está correto
-📄 **Ver resumo** - Mostrar todos os dados inseridos
+🔢 **Calcular agora** - Ver o resultado imediatamente
+📋 **Revisar dados** - Verificar se tudo está correto
+� **Continuar conversa** - Adicionar mais informações
 
 O que prefere?`,
             timestamp: new Date()
@@ -102,11 +106,13 @@ O que prefere?`,
         }, 1000)
       }
 
-    } catch {
+    } catch (error) {
+      console.error('Erro na IA:', error)
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Desculpe, houve um erro. Pode tentar novamente? 😅',
+        content: 'Houve um problema temporário. Pode tentar novamente? 😅',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -166,7 +172,7 @@ O que prefere?`,
                 >
                   {message.content}
                   
-                  {message.extractedData && (
+                  {message.extractedData && Object.keys(message.extractedData).length > 0 && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
                       <div className="flex items-center gap-1 text-green-700">
                         <FileText className="h-4 w-4" />
@@ -175,6 +181,41 @@ O que prefere?`,
                       <pre className="text-green-600 text-xs mt-1">
                         {JSON.stringify(message.extractedData, null, 2)}
                       </pre>
+                    </div>
+                  )}
+                  
+                  {message.mlInsights && message.mlInsights.length > 0 && (
+                    <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded text-sm">
+                      <div className="flex items-center gap-1 text-purple-700">
+                        <Lightbulb className="h-4 w-4" />
+                        <span className="font-medium">Insights Inteligentes:</span>
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {message.mlInsights.map((insight, idx) => (
+                          <div key={idx} className="text-purple-600 text-xs">
+                            {insight}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {message.sources && message.sources.length > 0 && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                      <div className="flex items-center gap-1 text-blue-700">
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="font-medium">Fontes Web:</span>
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {message.sources.map((source, idx) => (
+                          <div key={idx} className="text-blue-600 text-xs">
+                            <a href={source.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              📄 {source.title}
+                            </a>
+                            <p className="text-gray-600 mt-1">{source.snippet}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -249,6 +290,13 @@ O que prefere?`,
               <p className="text-xs text-gray-500">
                 💡 Fale naturalmente: &quot;Ganho 30 mil por ano&quot; ou &quot;Gastei 500€ em médicos&quot;
               </p>
+            </div>
+            
+            <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-3 w-3" />
+                <span>IA Híbrida: Local + ML + Web</span>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
