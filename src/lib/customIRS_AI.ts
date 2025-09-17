@@ -110,14 +110,26 @@ export class CustomIRSAI {
   private extractDataFromMessage(message: string): Partial<IRSData> {
     const extracted: Partial<IRSData> = {}
 
-    // 0. DETECTAR SITUAÇÃO PROFISSIONAL - NOVO
+    // 0. DETECTAR SITUAÇÃO PROFISSIONAL - EXPANDIDO
     const professionalSituationPatterns = [
+      // Trabalho independente
       { patterns: [/sou\s+freelancer/gi, /trabalho\s+como\s+freelancer/gi, /freelancer/gi], type: 'independent' },
       { patterns: [/sou\s+trabalhador\s+independente/gi, /trabalho\s+independente/gi, /independente/gi], type: 'independent' },
       { patterns: [/sou\s+autônomo/gi, /trabalho\s+autônomo/gi, /autônomo/gi], type: 'independent' },
       { patterns: [/sou\s+empresário/gi, /tenho\s+empresa/gi, /sou\s+patrão/gi], type: 'independent' },
       { patterns: [/recibo\s+verde/gi, /emito\s+recibos/gi], type: 'independent' },
+      
+      // Trabalho por conta de outrem - profissões específicas
+      { patterns: [/sou\s+motorista/gi, /trabalho\s+como\s+motorista/gi, /conduzo/gi, /condutor/gi], type: 'employed' },
+      { patterns: [/sou\s+vendedor/gi, /trabalho\s+em\s+vendas/gi, /comercial/gi], type: 'employed' },
+      { patterns: [/sou\s+professor/gi, /sou\s+docente/gi, /ensino/gi, /leciono/gi], type: 'employed' },
+      { patterns: [/sou\s+enfermeiro/gi, /trabalho\s+no\s+hospital/gi, /área\s+da\s+saúde/gi], type: 'employed' },
+      { patterns: [/sou\s+engenheiro/gi, /sou\s+arquiteto/gi, /sou\s+advogado/gi], type: 'employed' },
+      { patterns: [/sou\s+técnico/gi, /sou\s+mecânico/gi, /sou\s+eletricista/gi], type: 'employed' },
+      { patterns: [/trabalho\s+numa?\s+empresa/gi, /trabalho\s+em/gi, /empregado\s+em/gi], type: 'employed' },
       { patterns: [/sou\s+funcionário/gi, /trabalho\s+por\s+conta\s+de\s+outrem/gi, /empregado/gi], type: 'employed' },
+      
+      // Reforma/pensão
       { patterns: [/sou\s+reformado/gi, /sou\s+pensionista/gi, /reforma/gi, /pensão/gi], type: 'retired' }
     ]
 
@@ -449,6 +461,15 @@ export class CustomIRSAI {
 Para começar, pode dizer-me qual o seu salário anual? Por exemplo: "Ganho 30.000 euros por ano" ou "Recebo 2.500€ por mês".`
       nextQuestion = "Qual é o seu rendimento anual do trabalho?"
       this.conversationState.currentStep = 'income'
+      confidence = 1.0
+
+    } else if (this.conversationState.currentStep === 'employment_income' || 
+               (this.conversationState.userContext.isEmployed && !data.employmentIncome && !data.independentIncome)) {
+      responseMessage = `Entendi que trabalha por conta de outrem! 
+
+Para calcular o seu IRS corretamente, preciso saber o seu salário anual. Pode dizer-me quanto ganha? Por exemplo: "Ganho 30.000 euros por ano" ou "Recebo 2.500€ por mês".`
+      nextQuestion = "Qual é o seu salário anual?"
+      this.conversationState.currentStep = 'employment_income'
       confidence = 1.0
 
     } else if (this.conversationState.currentStep === 'independent_income' || 
