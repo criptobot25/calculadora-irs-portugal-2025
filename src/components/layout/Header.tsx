@@ -9,7 +9,6 @@ const navigation = [
   { name: 'Início', href: '/' },
   { name: 'Calculadora', href: '/calculadora' },
   { name: 'IA Calculadora', href: '/calculadora-ia', badge: 'NOSSA IA' },
-  { name: 'Demo IA', href: '/demo-ia', badge: 'TESTE' },
   { name: 'Sobre', href: '/sobre' },
   { name: 'FAQ', href: '/faq' },
   { name: 'Blog', href: '/blog' },

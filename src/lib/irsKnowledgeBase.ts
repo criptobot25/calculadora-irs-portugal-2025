@@ -209,25 +209,75 @@ export const IRS_KNOWLEDGE_BASE = {
     incomeKeywords: [
       'salário', 'vencimento', 'ordenado', 'ganho', 'recebo', 'auferido',
       'rendimento', 'remuneração', 'subsídio', 'prémio', 'comissão',
-      'trabalho', 'emprego', 'empresa', 'patrão', 'chefe'
+      'trabalho', 'emprego', 'empresa', 'patrão', 'chefe', 'bruto', 'líquido',
+      'anual', 'mensal', 'por mês', 'ao ano', 'euros', 'mil euros'
+    ],
+    
+    monetaryPatterns: [
+      // Padrões básicos com euros
+      /(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€)/gi,
+      /(?:euros?|€)\s*(\d+(?:[.,]\d+)?)/gi,
+      
+      // Padrões com "k" para milhares
+      /(\d+(?:[.,]\d+)?)k/gi,
+      
+      // Padrões de contexto
+      /(?:salário|vencimento|ganho|recebo).*?(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€)/gi,
+      /(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€).*?(?:salário|vencimento|por mês)/gi
     ],
     
     expenseKeywords: {
       health: [
         'saúde', 'médico', 'medicina', 'hospital', 'clínica', 'farmácia',
         'dentista', 'oftalmologista', 'consulta', 'medicamento', 'óculos',
-        'fisioterapia', 'psicólogo', 'análises', 'exames', 'cirurgia'
+        'fisioterapia', 'psicólogo', 'análises', 'exames', 'cirurgia',
+        'gastei com médico', 'paguei ao dentista', 'fui ao hospital',
+        'comprei medicamentos', 'receita médica', 'seguro de saúde'
       ],
       education: [
         'educação', 'escola', 'universidade', 'colégio', 'propina', 'livros',
         'material escolar', 'creche', 'jardim de infância', 'ATL',
-        'formação', 'curso', 'explicações', 'estudo'
+        'formação', 'curso', 'explicações', 'estudo', 'mensalidade',
+        'paguei propinas', 'escola dos filhos', 'livros escolares',
+        'material para escola', 'curso de formação', 'mestrado', 'licenciatura'
       ],
       housing: [
         'casa', 'habitação', 'empréstimo', 'prestação', 'juros', 'crédito',
-        'obras', 'remodelação', 'renda', 'arrendamento', 'aluguer'
+        'obras', 'remodelação', 'renda', 'arrendamento', 'aluguer',
+        'prestação da casa', 'empréstimo habitação', 'crédito à habitação',
+        'pago prestação', 'juros do empréstimo', 'obras em casa', 'renda de casa'
       ]
     },
+
+    civilStatusKeywords: {
+      single: [
+        'solteiro', 'solteira', 'não casado', 'não casada', 'sozinho', 'sozinha',
+        'pessoa solteira', 'vida de solteiro', 'não tenho cônjuge', 'sem marido', 'sem esposa'
+      ],
+      married: [
+        'casado', 'casada', 'esposa', 'marido', 'cônjuge', 'união de facto',
+        'vivo junto', 'companheiro', 'companheira', 'minha mulher', 'meu marido',
+        'casamento', 'casei', 'tenho esposa', 'tenho marido'
+      ],
+      divorced: [
+        'divorciado', 'divorciada', 'separado', 'separada', 'ex-marido', 'ex-esposa',
+        'divórcio', 'separação', 'já fui casado', 'já fui casada'
+      ]
+    },
+
+    dependentsKeywords: [
+      // Números diretos
+      'um filho', 'uma filha', 'dois filhos', 'duas filhas', 'três filhos',
+      'quatro filhos', 'cinco filhos', 'seis filhos',
+      
+      // Padrões com números
+      'tenho 1 filho', 'tenho 2 filhos', 'tenho 3 filhos', 'tenho 4 filhos',
+      'sou pai de', 'sou mãe de', 'pai de dois', 'mãe de três',
+      
+      // Negações
+      'não tenho filhos', 'sem filhos', 'zero filhos', 'nenhum filho',
+      'não sou pai', 'não sou mãe', 'sem dependentes', 'não tenho dependentes'
+    ],
 
     familyKeywords: [
       'filho', 'filha', 'filhos', 'criança', 'dependente', 'família',
