@@ -1,103 +1,113 @@
-import Image from "next/image";
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { Calculator, CheckCircle, Shield, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: 'Calculadora IRS Portugal 2025 - Calcule o seu Imposto de Forma Gratuita',
+  description: 'Calcule o seu IRS para 2025 de forma simples e gratuita. Descubra se vai receber reembolso ou pagar imposto.',
+}
+
+export default function HomePage() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen">
+      <section className="bg-gradient-to-br from-blue-50 to-indigo-100 py-16 lg:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
+              Calcule o seu <span className="text-blue-600">IRS 2025</span> em minutos
+            </h1>
+            
+            <p className="mt-6 text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto">
+              Descubra se vai receber reembolso ou pagar imposto. 
+              Calculadora gratuita, simples e baseada nas tabelas oficiais.
+            </p>
+            
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/calculator">
+                <Button variant="primary" size="xl" className="w-full sm:w-auto">
+                  <Calculator className="mr-2 h-5 w-5" />
+                  Calcular o meu IRS
+                </Button>
+              </Link>
+              
+              <Link href="/sobre">
+                <Button variant="outline" size="xl" className="w-full sm:w-auto">
+                  Como funciona?
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      <section className="py-16 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Porquê escolher a nossa calculadora?
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <Card className="text-center border-0 shadow-lg">
+              <CardHeader>
+                <Calculator className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">Cálculo Simples</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>Interface intuitiva com wizard passo-a-passo.</CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-0 shadow-lg">
+              <CardHeader>
+                <CheckCircle className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">Resultados Precisos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>Baseado nas tabelas oficiais de IRS 2025.</CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-0 shadow-lg">
+              <CardHeader>
+                <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">Dados Seguros</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>Os seus dados ficam no seu dispositivo.</CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-0 shadow-lg">
+              <CardHeader>
+                <Clock className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">Rápido e Gratuito</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>Calcule o seu IRS em menos de 5 minutos.</CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-blue-600">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Pronto para calcular o seu IRS?
+          </h2>
+          
+          <Link href="/calculator">
+            <Button variant="default" size="xl" className="bg-white text-blue-600 hover:bg-gray-50">
+              <Calculator className="mr-2 h-5 w-5" />
+              Calcular Agora - Grátis
+            </Button>
+          </Link>
+        </div>
+      </section>
     </div>
-  );
+  )
 }
