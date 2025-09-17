@@ -3,6 +3,7 @@ import { IRS_KNOWLEDGE_BASE, IRS_UTILS } from './irsKnowledgeBase'
 
 export interface IRSData {
   employmentIncome?: number
+  independentIncome?: number
   businessIncome?: number
   investmentIncome?: number
   propertyIncome?: number
@@ -37,8 +38,11 @@ export class CustomIRSAI {
     userContext: {
       hasFamily: boolean
       isEmployed: boolean
+      isIndependent: boolean
+      isRetired: boolean
       hasProperty: boolean
       hasBusiness: boolean
+      workType: 'employed' | 'independent' | 'retired' | 'unemployed' | null
       needsHelp: string[]
     }
   }
@@ -54,8 +58,11 @@ export class CustomIRSAI {
       userContext: {
         hasFamily: false,
         isEmployed: false,
+        isIndependent: false,
+        isRetired: false,
         hasProperty: false,
         hasBusiness: false,
+        workType: null,
         needsHelp: []
       }
     }
@@ -103,6 +110,39 @@ export class CustomIRSAI {
   private extractDataFromMessage(message: string): Partial<IRSData> {
     const extracted: Partial<IRSData> = {}
 
+    // 0. DETECTAR SITUAÇÃO PROFISSIONAL - NOVO
+    const professionalSituationPatterns = [
+      { patterns: [/sou\s+freelancer/gi, /trabalho\s+como\s+freelancer/gi, /freelancer/gi], type: 'independent' },
+      { patterns: [/sou\s+trabalhador\s+independente/gi, /trabalho\s+independente/gi, /independente/gi], type: 'independent' },
+      { patterns: [/sou\s+autônomo/gi, /trabalho\s+autônomo/gi, /autônomo/gi], type: 'independent' },
+      { patterns: [/sou\s+empresário/gi, /tenho\s+empresa/gi, /sou\s+patrão/gi], type: 'independent' },
+      { patterns: [/recibo\s+verde/gi, /emito\s+recibos/gi], type: 'independent' },
+      { patterns: [/sou\s+funcionário/gi, /trabalho\s+por\s+conta\s+de\s+outrem/gi, /empregado/gi], type: 'employed' },
+      { patterns: [/sou\s+reformado/gi, /sou\s+pensionista/gi, /reforma/gi, /pensão/gi], type: 'retired' }
+    ]
+
+    for (const situation of professionalSituationPatterns) {
+      for (const pattern of situation.patterns) {
+        if (pattern.test(message)) {
+          this.conversationState.userContext.workType = situation.type as 'employed' | 'independent' | 'retired'
+          
+          // Se é independente/freelancer, perguntar rendimento independente
+          if (situation.type === 'independent') {
+            this.conversationState.userContext.isIndependent = true
+            // Marcar que precisa de rendimento independente em vez de salário
+            this.conversationState.currentStep = 'independent_income'
+          } else if (situation.type === 'employed') {
+            this.conversationState.userContext.isEmployed = true
+            this.conversationState.currentStep = 'employment_income'
+          } else if (situation.type === 'retired') {
+            this.conversationState.userContext.isRetired = true
+            this.conversationState.currentStep = 'pension_income'
+          }
+          break
+        }
+      }
+    }
+
     // 1. EXTRAIR RENDIMENTOS DO TRABALHO - Melhorado
     const incomePatterns = [
       // Padrões básicos melhorados
@@ -142,6 +182,49 @@ export class CustomIRSAI {
           }
           this.conversationState.userContext.isEmployed = true
           break
+        }
+      }
+    }
+
+    // 1.5. EXTRAIR RENDIMENTOS INDEPENDENTES - NOVO
+    const independentIncomePatterns = [
+      /(?:faturo|faturei|facturo|facturei)\s+(?:cerca\s+de\s+)?(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€)/gi,
+      /(?:como\s+freelancer|independente|autônomo).*?(?:ganho|recebo|faturo)\s+(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€)/gi,
+      /(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€).*?(?:independente|freelancer|autônomo|faturação)/gi,
+      /(?:rendimento|receita)\s+(?:independente|freelancer).*?(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€)/gi,
+      /(?:trabalho\s+independente|freelancer).*?(\d+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:euros?|€)/gi
+    ]
+
+    // Se detectou que é independente ou se mencionou termos de trabalho independente
+    if (this.conversationState.userContext.isIndependent || 
+        /freelancer|independente|autônomo|faturo|recibo\s+verde/gi.test(message)) {
+      
+      for (const pattern of independentIncomePatterns) {
+        const matches = [...message.matchAll(pattern)]
+        if (matches.length > 0) {
+          let amount = this.parseAmount(matches[0][1])
+          
+          // Detectar multiplicadores
+          const originalMatch = matches[0][0]
+          
+          if (originalMatch.includes('mil') || message.includes('mil')) {
+            amount = amount * 1000
+          }
+          
+          if (originalMatch.includes('k') || message.includes('k')) {
+            amount = amount * 1000
+          }
+          
+          if (amount > 0) {
+            // Determinar se é mensal ou anual
+            if (message.includes('mês') || message.includes('mensal') || message.includes('mensais')) {
+              extracted.independentIncome = amount * 12
+            } else {
+              extracted.independentIncome = amount
+            }
+            this.conversationState.userContext.isIndependent = true
+            break
+          }
         }
       }
     }
@@ -368,9 +451,19 @@ Para começar, pode dizer-me qual o seu salário anual? Por exemplo: "Ganho 30.0
       this.conversationState.currentStep = 'income'
       confidence = 1.0
 
-    } else if (data.employmentIncome && !data.civilStatus) {
-      const income = data.employmentIncome
-      responseMessage = `Perfeito! Registei um rendimento de ${this.formatCurrency(income)} por ano. 
+    } else if (this.conversationState.currentStep === 'independent_income' || 
+               (this.conversationState.userContext.isIndependent && !data.employmentIncome && !data.independentIncome)) {
+      responseMessage = `Entendi que é freelancer/trabalhador independente! 
+
+Para calcular o seu IRS corretamente, preciso saber o seu rendimento anual. Pode dizer-me quanto faturou no ano? Por exemplo: "Faturei 25.000 euros" ou "Ganho cerca de 2.000€ por mês".`
+      nextQuestion = "Qual é o seu rendimento anual como independente?"
+      this.conversationState.currentStep = 'independent_income'
+      confidence = 1.0
+
+    } else if ((data.employmentIncome || data.independentIncome) && !data.civilStatus) {
+      const income = data.employmentIncome || data.independentIncome || 0
+      const incomeType = data.employmentIncome ? 'salário' : 'rendimento independente'
+      responseMessage = `Perfeito! Registei um ${incomeType} de ${this.formatCurrency(income)} por ano. 
 
 Agora preciso saber o seu estado civil para calcular as deduções corretas. É solteiro(a) ou casado(a)?`
       nextQuestion = "Qual é o seu estado civil?"
@@ -406,7 +499,7 @@ Tem despesas de educação? (propinas, material escolar, cursos, etc.)`
       responseMessage = `Excelente! Com base nos dados fornecidos:
 
 📊 **Resumo dos seus dados:**
-• Rendimento: ${this.formatCurrency(data.employmentIncome || 0)}
+• Rendimento: ${this.formatCurrency((data.employmentIncome || data.independentIncome) || 0)} ${data.independentIncome ? '(Independente)' : '(Trabalho)'}
 • Estado civil: ${this.getStatusText(data.civilStatus)}
 • Dependentes: ${data.dependents || 0}
 • Saúde: ${this.formatCurrency(data.healthExpenses || 0)}
@@ -438,11 +531,19 @@ Quer que calcule o valor exato ou tem mais informações para adicionar?`
   }
 
   private calculateCompleteness(data: Partial<IRSData>): number {
-    const requiredFields = ['employmentIncome', 'civilStatus', 'dependents']
+    // Aceitar tanto rendimento do trabalho quanto independente
+    const hasIncome = data.employmentIncome || data.independentIncome
+    const requiredFields = ['civilStatus', 'dependents']
     const optionalFields = ['healthExpenses', 'educationExpenses']
     
     let score = 0
     let total = 0
+
+    // Campo de rendimento obrigatório (peso 2)
+    total += 2
+    if (hasIncome) {
+      score += 2
+    }
 
     // Campos obrigatórios (peso 2)
     for (const field of requiredFields) {
@@ -538,8 +639,11 @@ Deduções aplicadas: ${this.formatCurrency(deductions)}
       userContext: {
         hasFamily: false,
         isEmployed: false,
+        isIndependent: false,
+        isRetired: false,
         hasProperty: false,
         hasBusiness: false,
+        workType: null,
         needsHelp: []
       }
     }
