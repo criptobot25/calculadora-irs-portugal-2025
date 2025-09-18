@@ -18,8 +18,9 @@ interface AIResponse {
 
 export class HybridIntelligentAI {
   private localIRS: CustomIRSAI
-  private searchAPI = 'https://api.search.brave.com/res/v1/web/search' // API gratuita Brave Search
-  private mlAPI = 'https://api-inference.huggingface.co/models/' // Hugging Face gratuito
+  // Usar APIs gratuitas sem chave
+  private searchAPI = 'https://duckduckgo-api.vercel.app/search' // API gratuita sem chave
+  private freeMLAPI = 'https://api.openai.com/v1/chat/completions' // Será substituída por lógica local
 
   constructor() {
     this.localIRS = new CustomIRSAI()
@@ -53,32 +54,7 @@ export class HybridIntelligentAI {
   }
 
   private async analyzeWithML(message: string, extractedData: Partial<IRSData>): Promise<string[]> {
-    try {
-      // Usar modelos gratuitos do Hugging Face para análise semântica
-      const analysisPrompt = `Analise esta mensagem sobre IRS português e forneça insights:
-      Mensagem: "${message}"
-      Dados extraídos: ${JSON.stringify(extractedData)}
-      
-      Forneça 3 insights úteis sobre situação fiscal em português:`
-
-      const response = await fetch(`${this.mlAPI}microsoft/DialoGPT-medium`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inputs: analysisPrompt,
-          parameters: { max_length: 200, temperature: 0.7 }
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        const insights = this.extractInsights(result[0]?.generated_text || '')
-        return insights
-      }
-    } catch (error) {
-      console.log('ML analysis optional - continuing with local AI')
-    }
-    
+    // IA LOCAL sem APIs externas - 100% gratuita
     return this.generateLocalInsights(message, extractedData)
   }
 
@@ -150,19 +126,64 @@ export class HybridIntelligentAI {
   private generateLocalInsights(message: string, data: Partial<IRSData>): string[] {
     const insights = []
     
+    // Insights baseados em rendimento
     if (data.employmentIncome && data.employmentIncome > 50000) {
       insights.push('💰 Com rendimento alto, considere PPR para reduzir IRS')
     }
     
+    if (data.employmentIncome && data.employmentIncome < 20000) {
+      insights.push('💡 Com rendimento baixo, pode ter direito a deduções especiais')
+    }
+    
+    // Insights baseados em estado civil
+    if (data.civilStatus === 'married') {
+      insights.push('👫 Casados podem escolher tributação conjunta ou separada')
+      insights.push('💍 Cônjuge também gera dedução de 4.104€')
+    }
+    
+    if (data.civilStatus === 'single' && data.dependents && data.dependents > 0) {
+      insights.push('👨‍👩‍👧‍👦 Como pai/mãe solteiro(a), tem deduções especiais')
+    }
+    
+    // Insights baseados em despesas
     if (!data.healthExpenses) {
       insights.push('🏥 Não se esqueça de guardar faturas médicas para dedução')
     }
     
-    if (data.civilStatus === 'married') {
-      insights.push('👫 Casados podem escolher tributação conjunta ou separada')
+    if (!data.educationExpenses && data.dependents && data.dependents > 0) {
+      insights.push('📚 Despesas de educação dos filhos são dedutíveis (até 800€)')
     }
     
-    return insights
+    // Insights baseados na mensagem
+    if (message.includes('freelancer') || message.includes('independente')) {
+      insights.push('� Trabalho independente: considere abrir atividade para deduções')
+    }
+    
+    if (message.includes('casa') || message.includes('habitação')) {
+      insights.push('🏠 Crédito habitação própria gera deduções até 591€')
+    }
+    
+    if (message.includes('médico') || message.includes('saúde')) {
+      insights.push('🩺 Despesas de saúde são 100% dedutíveis até 1.000€')
+    }
+    
+    // Insights inteligentes por faixa de rendimento
+    if (data.employmentIncome) {
+      const income = data.employmentIncome
+      if (income > 80000) {
+        insights.push('📈 Rendimento no escalão máximo (48%) - otimização é crucial')
+      } else if (income > 36000) {
+        insights.push('📊 No escalão de 35% - cada dedução tem impacto significativo')
+      } else if (income > 20000) {
+        insights.push('⚖️ Em escalão intermédio - equilíbrio entre imposto e deduções')
+      }
+    }
+    
+    return insights.length > 0 ? insights.slice(0, 3) : [
+      '💡 Complete os dados para receber insights personalizados',
+      '🎯 Cada euro em deduções reduz diretamente o seu IRS',
+      '📱 Nossa IA analisa sua situação em tempo real'
+    ]
   }
 
   private async enhanceResponse(
@@ -196,32 +217,24 @@ export class HybridIntelligentAI {
   }
 
   private async refineWithML(response: string, userMessage: string): Promise<string | null> {
-    try {
-      const prompt = `Melhore esta resposta sobre IRS português, mantendo precisão técnica:
-      
-      Pergunta: ${userMessage}
-      Resposta atual: ${response}
-      
-      Resposta melhorada:`
-
-      const mlResponse = await fetch(`${this.mlAPI}microsoft/DialoGPT-medium`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: { max_length: 300, temperature: 0.6 }
-        })
-      })
-
-      if (mlResponse.ok) {
-        const result = await mlResponse.json()
-        return result[0]?.generated_text?.replace(prompt, '').trim()
-      }
-    } catch (error) {
-      console.log('ML refinement optional - using original response')
+    // IA LOCAL - sem APIs externas
+    // Usar regras inteligentes para melhorar resposta
+    let refined = response
+    
+    // Adicionar contexto baseado em palavras-chave
+    if (userMessage.includes('quanto')) {
+      refined += '\n\n💡 Dica: O valor final pode variar com deduções!'
     }
     
-    return null
+    if (userMessage.includes('casado') || userMessage.includes('cônjuge')) {
+      refined += '\n\n👫 Lembre-se: Casais podem optar por tributação conjunta ou separada.'
+    }
+    
+    if (userMessage.includes('filho') || userMessage.includes('dependente')) {
+      refined += '\n\n👶 Dependentes geram deduções significativas!'
+    }
+    
+    return refined !== response ? refined : null
   }
 
   // Método para treinar com feedback do usuário
