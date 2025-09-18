@@ -194,18 +194,16 @@ export class HybridIntelligentAI {
   ): Promise<string> {
     let enhanced = originalMessage
 
-    // Adicionar insights de ML se relevantes
-    if (mlInsights.length > 0) {
-      enhanced += `\n\n🤖 **Insights Inteligentes:**\n${mlInsights.join('\n')}`
-    }
-
-    // Adicionar informações da web se encontradas
+    // NÃO adicionar insights na mensagem - eles vão para campo separado
+    // Apenas adicionar informações da web se encontradas
     if (webResults.length > 0) {
       enhanced += `\n\n🌐 **Informações Atualizadas:**\n`
       webResults.forEach(result => {
         enhanced += `• [${result.title}](${result.url})\n  ${result.snippet}\n`
       })
     }
+
+    // NÃO adicionar mlInsights/insights aqui!
 
     // Usar ML para melhorar a resposta (opcional)
     try {
